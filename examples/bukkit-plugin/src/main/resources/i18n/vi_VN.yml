@@ -1,0 +1,3 @@
+greeting:
+  welcome: "Chao mung tro lai, {player}!"
+  goodbye: "Tam biet, {player}!"

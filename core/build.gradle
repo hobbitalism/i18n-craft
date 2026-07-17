@@ -1,0 +1,53 @@
+plugins {
+    id 'java'
+    id 'java-library'
+}
+
+repositories {
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
+}
+
+dependencies {
+    implementation 'org.spigotmc:spigot-api:1.21.4-R0.1-SNAPSHOT'
+    implementation 'com.github.hobbitalism:mini-config:v0.1.0'
+
+    compileOnly 'org.jetbrains:annotations:26.0.2'
+    compileOnly 'org.projectlombok:lombok:1.18.38'
+    annotationProcessor 'org.projectlombok:lombok:1.18.38'
+
+    testCompileOnly 'org.projectlombok:lombok:1.18.38'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.38'
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            artifactId = 'i18n-craft-core'
+            pom {
+                name = 'i18n-craft Core'
+                description = 'i18n-craft — a localization framework for Bukkit servers'
+                url = 'https://github.com/hobbitalism/i18n-craft'
+                licenses {
+                    license {
+                        name = 'MIT License'
+                        url = 'https://opensource.org/licenses/MIT'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:git://github.com/hobbitalism/i18n-craft.git'
+                    developerConnection = 'scm:git:ssh://github.com/hobbitalism/i18n-craft.git'
+                    url = 'https://github.com/hobbitalism/i18n-craft'
+                }
+                developers {
+                    developer {
+                        id = 'hobbitalism'
+                        name = 'hobbitalism'
+                        email = 'hobbitalism@users.noreply.github.com'
+                    }
+                }
+            }
+        }
+    }
+}

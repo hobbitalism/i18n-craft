@@ -1,0 +1,10 @@
+name: i18n-craft-example
+version: "0.1.0"
+main: com.hobbitalism.i18ncraft.example.ExamplePlugin
+api-version: "1.21"
+description: An example plugin demonstrating i18n-craft translation features
+
+commands:
+  lang:
+    description: Translate a message key to a given locale
+    usage: /lang [locale] [key]

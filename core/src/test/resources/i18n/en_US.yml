@@ -1,0 +1,8 @@
+# Error messages configuration file
+# This file contains all error messages
+
+# Generic errors
+error:
+  generic: "An error has occurred"
+  unknown: "Unknown error"
+  retry: "Please try again"

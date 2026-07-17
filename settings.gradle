@@ -1,0 +1,4 @@
+rootProject.name = 'i18n-craft'
+
+include 'core'
+include 'examples:bukkit-plugin'

@@ -1,0 +1,8 @@
+# Error messages configuration file
+# This file contains all error messages
+
+# Generic errors
+error:
+  generic: "Đã có lỗi xảy ra"
+  unknown: "Lỗi không xác định"
+  retry: "Vui lòng thử lại"
