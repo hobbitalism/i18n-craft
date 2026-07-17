@@ -106,14 +106,14 @@ public class ResourceTranslator implements Translator {
 
     @Override
     public String translate(String key, Map<String, String> placeholders) {
-        return translate(null, key, placeholders);
+        return translate(translatorConfig.getFallbackLanguage(), key, placeholders);
     }
 
     @Override
     public String translate(String locale, String key, Map<String, String> placeholders) {
+        Objects.requireNonNull(locale, "The locale cannot be null.");
         Objects.requireNonNull(key, "The key cannot be null.");
-        String resolvedLocale = locale != null ? locale : translatorConfig.getFallbackLanguage();
-        String localeOrUseFallback = findLocaleOrUseFallback(resolvedLocale);
+        String localeOrUseFallback = findLocaleOrUseFallback(locale);
         Optional<TranslationMetadataItem> metadataItem = findMetadataItem(localeOrUseFallback);
 
         // If the metadata item is not found. Return a key with a warning
@@ -124,7 +124,8 @@ public class ResourceTranslator implements Translator {
 
         TranslationMetadataItem translationMetadataItem = metadataItem.get();
         Config config = loadConfigurationFromMetadataItem(translationMetadataItem);
-        return config.getString(key, key);
+        String translated = config.getString(key, key);
+        return translatorConfig.getPlaceholderProcessor().transform(translated, placeholders);
     }
 
     private String findLocaleOrUseFallback(String locale) {

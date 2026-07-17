@@ -1,5 +1,7 @@
 package com.hobbitalism.i18ncraft.model;
 
+import com.hobbitalism.i18ncraft.api.PlaceholderProcessor;
+import com.hobbitalism.i18ncraft.util.PlaceholderUtil;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -24,5 +26,12 @@ public class TranslatorConfig {
      */
     @Builder.Default
     private String configDirectory = "languages";
+
+    /**
+     * The placeholder processor used to replace placeholders in translated strings.
+     * Defaults to {@link PlaceholderUtil#defaultProcessor()}.
+     */
+    @Builder.Default
+    private PlaceholderProcessor placeholderProcessor = PlaceholderUtil.defaultProcessor();
 
 }
