@@ -2,6 +2,17 @@ plugins {
     id 'maven-publish'
 }
 
+def javaHomeForGradle = System.getProperty('java.home')
+
+tasks.register('runServerWithExamples', Exec) {
+    description = 'Runs a Paper test server with the example plugin (includes examples in the build)'
+    group = 'run'
+    workingDir = rootDir
+    environment 'JAVA_HOME', javaHomeForGradle
+    def gradlew = System.getProperty('os.name').toLowerCase().contains('win') ? 'gradlew.bat' : './gradlew'
+    commandLine = [gradlew, ':examples:bukkit-plugin:runServer', '-PincludeExamples']
+}
+
 subprojects {
     apply plugin: 'java'
     apply plugin: 'java-library'

@@ -13,7 +13,6 @@
             <option value="$PROJECT_DIR$/examples/bukkit-plugin" />
           </set>
         </option>
-        <option name="myGradleHome" value="" />
       </GradleProjectSettings>
     </option>
   </component>
