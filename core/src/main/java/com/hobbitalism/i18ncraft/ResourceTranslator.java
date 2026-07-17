@@ -14,6 +14,7 @@ import com.hobbitalism.i18ncraft.util.FileResourceUtil;
 import com.hobbitalism.i18ncraft.util.SetUtil;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Getter;
 import org.bukkit.plugin.Plugin;
 
 import java.io.IOException;
@@ -31,17 +32,80 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * The core implementation of {@link Translator} that resolves translation keys
+ * against locale-specific YAML configuration files.
+ *
+ * <p>{@code ResourceTranslator} supports the following workflow:
+ * <ol>
+ *   <li><b>Loading:</b> {@link #loadFromResource(Path)} reads a JSON manifest
+ *       from the plugin JAR, copies missing translation files to a data
+ *       directory, and registers each file's locale.</li>
+ *   <li><b>Translation:</b> {@link #translate(String, String, Map)} resolves a
+ *       key for a given locale, loads (and caches) the corresponding YAML
+ *       config, applies placeholder substitution via the configured
+ *       {@link com.hobbitalism.i18ncraft.api.PlaceholderProcessor}, and returns
+ *       the result.</li>
+ *   <li><b>Patching:</b> When a translation file is first loaded, any keys
+ *       present in the bundled resource but missing from the on-disk file are
+ *       automatically appended and the file is saved.</li>
+ *   <li><b>Reloading:</b> {@link #reload()} and {@link #reloadAsync()} refresh
+ *       all cached configurations from disk.</li>
+ * </ol>
+ *
+ * <p>Instances are created via the Lombok {@code @Builder}:
+ * <pre>{@code
+ * ResourceTranslator translator = ResourceTranslator.builder()
+ *         .plugin(plugin)
+ *         .translationMetadata(metadata)
+ *         .translationConfigMap(new HashMap<>())
+ *         .translatorConfig(TranslatorConfig.builder()
+ *                 .fallbackLanguage("en_US")
+ *                 .build())
+ *         .build();
+ * }</pre>
+ *
+ * @see Translator
+ * @see TranslationConfig
+ * @see TranslationMetadata
+ * @see TranslatorConfig
+ */
 @Builder
 @AllArgsConstructor
+@Getter
 public class ResourceTranslator implements Translator {
 
+    /** Metadata describing the available locales and their file paths. */
     private TranslationMetadata translationMetadata;
+
+    /** Cache of loaded {@link TranslationConfig} instances keyed by locale. */
     private Map<String, TranslationConfig> translationConfigMap;
+
+    /** The owning Bukkit {@link Plugin} used for resource access and logging. */
     private Plugin plugin;
+
+    /** Configuration for fallback language, placeholder processing, etc. */
     private TranslatorConfig translatorConfig;
 
     /**
-     * {@inheritDoc}
+     * Reads a JSON manifest from the plugin JAR, copies any missing
+     * translation files to the data directory, and registers the
+     * resulting locale-to-path mappings in {@link TranslationMetadata}.
+     *
+     * <p>The manifest file is a JSON array of resource paths
+     * (e.g. {@code ["i18n/en_US.yml", "i18n/vi_VN.yml"]}). Each listed
+     * file is copied to the target directory if it does not already
+     * exist, and its locale is derived from the file name stem
+     * (e.g. {@code en_US} from {@code en_US.yml}).
+     *
+     * @param fileName path to the JSON manifest file inside the plugin JAR
+     * @throws IOException              if reading or copying any file fails
+     * @throws NullPointerException     if {@code fileName} is null, or if
+     *                                  {@code translationMetadata} was not
+     *                                  set before calling this method
+     * @throws RuntimeException         if the manifest does not exist in the
+     *                                  JAR, or if a listed resource file is
+     *                                  missing
      */
     public void loadFromResource(Path fileName) throws IOException {
         Objects.requireNonNull(this.translationMetadata, "The translation metadata object is null.");
@@ -128,6 +192,11 @@ public class ResourceTranslator implements Translator {
         return translatorConfig.getPlaceholderProcessor().transform(translated, placeholders);
     }
 
+    /**
+     * Attempts to find the given locale among registered items. If no match
+     * is found (case-insensitive), the configured {@code fallbackLanguage}
+     * is returned instead.
+     */
     private String findLocaleOrUseFallback(String locale) {
         return translationMetadata.getItems().stream()
                 .map(TranslationMetadataItem::getLocale)
@@ -136,6 +205,10 @@ public class ResourceTranslator implements Translator {
                 .orElse(translatorConfig.getFallbackLanguage());
     }
 
+    /**
+     * Returns the {@link TranslationMetadataItem} whose locale matches the
+     * given string (case-insensitive), or empty if no such item exists.
+     */
     private Optional<TranslationMetadataItem> findMetadataItem(String locale) {
         return translationMetadata.getItems()
                 .stream()
@@ -143,6 +216,18 @@ public class ResourceTranslator implements Translator {
                 .findFirst();
     }
 
+    /**
+     * Loads (or retrieves from cache) the {@link Config} for the locale
+     * represented by the given metadata item.
+     *
+     * <p>On first access, this method reads the on-disk YAML file and the
+     * bundled resource, then calls {@link #patchConfigureFile} to merge
+     * any missing keys from the resource into the disk file.
+     *
+     * @param item the metadata item pointing to the file to load
+     * @return the loaded {@link Config} instance
+     * @throws RuntimeException if the file does not exist or cannot be read
+     */
     private Config loadConfigurationFromMetadataItem(TranslationMetadataItem item) {
         return translationConfigMap.computeIfAbsent(item.getLocale(), (key) -> {
             Path configPath = item.getPath();
@@ -165,6 +250,20 @@ public class ResourceTranslator implements Translator {
         });
     }
 
+    /**
+     * Merges keys from the bundled resource config into the on-disk config.
+     *
+     * <p>Any key that exists in {@code resourceConfig} but not in
+     * {@code targetConfig} is written to the target and the file is saved
+     * to disk. This ensures that newly added translation keys in plugin
+     * updates are automatically picked up without overwriting existing
+     * translations.
+     *
+     * @param resourceConfig the config loaded from the plugin JAR
+     * @param targetConfig   the config loaded from the on-disk file
+     * @param targetFileName the file name used for error messages
+     * @throws IOException if the target file cannot be saved
+     */
     private void patchConfigureFile(TranslationConfig resourceConfig,
                                     TranslationConfig targetConfig,
                                     String targetFileName) throws IOException {
@@ -192,6 +291,9 @@ public class ResourceTranslator implements Translator {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void reload() throws IOException {
         for (TranslationConfig translationConfig : translationConfigMap.values()) {
@@ -199,6 +301,9 @@ public class ResourceTranslator implements Translator {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public CompletableFuture<Void> reloadAsync() {
         return CompletableFuture.runAsync(() -> {

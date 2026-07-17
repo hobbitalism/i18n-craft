@@ -32,6 +32,12 @@ tasks {
     }
 }
 
+gradle.taskGraph.beforeTask { task ->
+    if (task.project.name == 'bukkit-plugin' && !project.hasProperty('includeExamples')) {
+        task.enabled = false
+    }
+}
+
 processResources {
     def props = [version: version]
     inputs.properties props
