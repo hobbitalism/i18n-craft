@@ -9,8 +9,10 @@ repositories {
 }
 
 dependencies {
+    api 'com.github.hobbitalism.mini-config:mini-config-core:v0.1.1'
+    api 'com.github.hobbitalism.mini-config:mini-config-yaml:v0.1.1'
+
     implementation 'org.spigotmc:spigot-api:1.21.4-R0.1-SNAPSHOT'
-    implementation 'com.github.hobbitalism:mini-config:v0.1.0'
 
     compileOnly 'org.jetbrains:annotations:26.0.2'
     compileOnly 'org.projectlombok:lombok:1.18.38'
